@@ -1,6 +1,6 @@
 h1{
-	color: red;
-	size: 100px;
+    color: red;
+    size: 100px;
 }
 h3{
     background: green;
@@ -14,8 +14,8 @@ h5{
 
 .h {
     color: red;
-    font-size: 48px; /* увеличиваем размер шрифта */
-    margin: 0; /* убираем отступы */
+    font-size: 48px;
+    margin: 0;
     text-align: center;
 }
 
@@ -35,12 +35,12 @@ body {
 
 
 .tracksContainer{
-	align-content: center;
-	background: url('Космос.png');
+    align-content: center;
+    background: url('Космос.png');
     background-size: contain;
     background-position: center;
-	border-radius: 20px;
-	padding: 40px;
+    border-radius: 20px;
+    padding: 40px;
     padding-right: 80%;
 }
 
@@ -111,11 +111,11 @@ body {
 }
 
 .controls{
-	width: 350px;
-	align-content: center;
-	background: #3333;
-	border-radius: 20px;
-	padding: 20px;
+    width: 350px;
+    align-content: center;
+    background: #3333;
+    border-radius: 20px;
+    padding: 20px;
 }
 
 .character {
@@ -235,6 +235,27 @@ button:disabled {
     padding: 20px;
     margin-bottom: 15px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: auto; 
+}
+
+
+.characterInMenu img {
+    display: block;
+    margin: 0 auto 10px auto; 
+}
+
+.button-container {
+    display: flex;
+    gap: 10px; 
+    width: 100%;
+    margin-top: 10px;
+}
+.addButton, .deleteButton {
+    width: 75px;
+    margin: 0;
+    flex-shrink: 0; 
 }
 
 .character-info {
@@ -320,10 +341,10 @@ button:disabled {
 .topPanel {
     position: relative;
     height: 120px;
-    width: calc(100% + 40px); /* компенсируем padding body */
-    margin-left: -20px; /* компенсируем padding body слева */
-    margin-right: -20px; /* компенсируем padding body справа */
-    margin-top: -20px; /* компенсируем padding body сверху */
+    width: calc(100% + 40px);
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-top: -20px;
     display: flex;
     align-items: center;
     justify-content: center;
