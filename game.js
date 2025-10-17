@@ -1,12 +1,3 @@
-// const { kill } = require("process");
-
-const characters = [
-    { id: 1, name: "Спринтер", color: "#FF6B6B", speed: 11 },
-    { id: 2, name: "Марафонец", color: "#4ECDC4", speed: 12 },
-    { id: 3, name: "Чювак", color: "#FE6B6B", speed: 80 },
-    {id: 4, name: "Кукловод",color: "#aeff00ff",speed: 81}
-];
-
 const container = document.getElementById('container');
 const buttonInv = document.getElementById('ButtonInv');
 const buttonStart = document.getElementById('ButtonStart');
@@ -14,6 +5,20 @@ const buttonReset = document.getElementById('ButtonReset');
 let raceInProgress = false;
 let isMenuOpened = false;
 let animationId = null;
+
+let charData;
+
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const response = await fetch('/chars');
+    if (!response.ok) throw new Error('Ошибка загрузки');
+
+    charData = await response.json();
+    console.log(charData.runners.find(c => c.id === 1).name);
+  } catch (err) {
+    console.error(err);
+  }
+});
 
 buttonInv.addEventListener('click', function()
 {
@@ -29,13 +34,31 @@ buttonInv.addEventListener('click', function()
     newDiv.id = 'menuDiv';
     document.body.appendChild(newDiv);
 
-    for(let i = 0; i < characters.length; i++)
+    for(let i = 1; i < charData.runners.length+1; i++)
     {
         const newMDiv = document.createElement('div');
         newMDiv.classList.add('characterInMenu');
         newMDiv.id = `char${i}`;
         newDiv.appendChild(newMDiv);
-        newMDiv.textContent = characters[i].name + " СКОРОЧТЬ!!: " + characters[i].speed;
+        const vak4 = charData.runners.find(c => c.id === i);
+        if(vak4){
+       newMDiv.innerHTML = '';
+        
+        const charImage = document.createElement('img');
+        charImage.src = vak4.image; 
+        charImage.alt = vak4.name;
+        charImage.style.width = '50px';
+        charImage.style.height = '50px';
+        charImage.style.objectFit = 'cover';
+        charImage.style.borderRadius = '10px';
+        charImage.style.marginBottom = '10px';
+    
+        const speedText = document.createElement('div');
+        speedText.textContent = `СКОРОСТЬ: ${vak4.speed}`;
+        speedText.style.marginBottom = '10px';
+        
+        newMDiv.appendChild(charImage);
+        newMDiv.appendChild(speedText);
 
         const killButton = document.createElement("button");
         killButton.textContent = "X";
@@ -43,17 +66,22 @@ buttonInv.addEventListener('click', function()
         killButton.id = `killButton${i}`;
         newMDiv.appendChild(killButton);
 
+         const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('button-container');
+
         const addButton = document.createElement('button');
         addButton.textContent = 'Добавить';
         addButton.classList.add('addButton');
-        newMDiv.appendChild(addButton);
+        buttonContainer.appendChild(addButton);
         addButton.id = `addButton${i}`;
 
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Удалить';
         deleteButton.classList.add('deleteButton');
-        newMDiv.appendChild(deleteButton);
+        buttonContainer.appendChild(deleteButton);
         deleteButton.id = `deleteButton${i}`;
+
+        newMDiv.appendChild(buttonContainer);
 
         addButton.addEventListener('click', function()
         {
@@ -64,19 +92,23 @@ buttonInv.addEventListener('click', function()
                 newDiv.id = `track${i}`;
                 container.appendChild(newDiv);
 
-                 const newP = document.createElement('p');
-                newP.classList.add('charTextOnTrack');
-                newP.id = `charText${i}`;
-                newP.textContent = characters[i].name;
-                newDiv.appendChild(newP); 
-
                 const newDiv2 = document.createElement('div');
                 newDiv2.classList.add('charOnTrack');
                 newDiv2.id = `char1${i}`;
                 newDiv2.dataset.characterId = i;
-                newDiv2.dataset.speed = characters[i].speed;
+                newDiv2.dataset.speed = vak4.speed;
                 newDiv2.dataset.position = "0";
                 newDiv.appendChild(newDiv2);
+
+                const newP = document.createElement('p');
+                newP.classList.add('charTextOnTrack');
+                newP.id = `charText${i}`;
+                newP.textContent = vak4.name;
+                newDiv.appendChild(newP);
+
+                finishLine.classList.add('visible');
+                finishLine.style.right = '130px';
+
             }
         })
 
@@ -84,6 +116,10 @@ buttonInv.addEventListener('click', function()
             [`char${i}`, `track${i}`, `charText${i}`].forEach(id => 
                 document.getElementById(id)?.remove()
             );
+            const remainingTracks = container.getElementsByClassName('track').length;
+        if (remainingTracks === 0) {
+            finishLine.classList.remove('visible');
+        }
         });
         deleteButton.addEventListener('click', function()
         {
@@ -92,7 +128,12 @@ buttonInv.addEventListener('click', function()
                 const div = document.getElementById('container');
                 div.removeChild(document.getElementById(`track${i}`));
             }
+            const remainingTracks = container.getElementsByClassName('track').length;
+        if (remainingTracks === 0) {
+            finishLine.classList.remove('visible');
+        }
         })
+    }
     }
 
     const generateButton = document.createElement('button');
@@ -119,50 +160,68 @@ buttonInv.addEventListener('click', function()
 
     })
 
- generateButton.addEventListener('click', function()
+generateButton.addEventListener('click', function()
 {
     const menuDiv = document.getElementById('menuDiv');
     
-    if (!document.getElementById('inputImg')) {
-        const inputImg = document.createElement('input');
-        inputImg.classList.add('inputImg');
-        inputImg.id = 'inputImg';
-        inputImg.type = 'file';
-        menuDiv.appendChild(inputImg);
+    if (!document.getElementById('urlInput')) {
+        const urlInput = document.createElement('input');
+        urlInput.classList.add('inputImg');
+        urlInput.id = 'urlInput';
+        urlInput.type = 'url';
+        urlInput.placeholder = 'Введите URL изображения...';
+        urlInput.style.marginBottom = '10px';
+        menuDiv.appendChild(urlInput);
         
-        const fileInput = document.getElementById('inputImg');
-        fileInput.addEventListener('change', function()
-        {
-            const file = this.files[0];
-            if (file) {
-                const formData = new FormData();
-                formData.append('file', file);
-                fetch('/img', {
-                  method: 'POST',
-                  body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                  console.log('Файл успешно загружен:', data);
-                  fileInput.style.display = 'none';
-                })
-                .catch(error => {
-                  console.error('Ошибка загрузки файла:', error);
-                });
-            }
+        generateButton.textContent = 'Отправить';
+        
+    } else {
+        const urlInput = document.getElementById('urlInput');
+        const imageUrl = urlInput.value.trim();
+        
+        if (!imageUrl) {
+            alert('Пожалуйста, введите URL изображения');
+            return;
+        }
+        try {
+            new URL(imageUrl);
+        } catch (e) {
+            alert('Пожалуйста, введите корректный URL');
+            return;
+        }
+        
+        fetch('/img', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: imageUrl })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('URL успешно отправлен:', data);
+            urlInput.classList.remove('inputImg');
+            urlInput.remove();
+            urlInput.value = '';
+            generateButton.textContent = 'Сгенерировать';
+        })
+        .catch(error => {
+            console.error('Ошибка отправки URL:', error);
+            alert('Ошибка при отправке URL');
         });
     }
-}); 
+});
 
 })
+
 
 buttonInv.addEventListener('click', function()
 {
     if(container.innerHTML)
     {
-        for(let i = 0; i < characters.length; i++)
+        for(let i = 0; i < charData.runners.length+1; i++)
         {
-            let char = container.getElementById(`track${i}`); 
+            let char = document.getElementById(`track${i}`); 
             // char.position = 500px;
         }
     }
@@ -181,11 +240,13 @@ buttonReset.addEventListener('click', function()
         track.style.transform = 'translateX(0px)';
     }
     
+ 
     const resultsDiv = document.getElementById('results');
-    while (resultsDiv.children.length >= 1) {
-        resultsDiv.removeChild(resultsDiv.lastChild);
-    }
+    const firstChild = resultsDiv.firstElementChild;
+    resultsDiv.innerHTML = '';
+    resultsDiv.appendChild(firstChild);
     
+
     finishLine.classList.remove('visible');
 })
 
@@ -248,14 +309,16 @@ buttonStart.addEventListener('click', function()
     for (let track of tracks) {
         const characterId = parseInt(track.dataset.characterId);
         const position = parseInt(track.dataset.position);
-        const speed1 = parseFloat(track.dataset.speed);
+        const character = charData.runners.find(c => c.id === characterId);
+        const speed1 = character ? character.speed : 0;
+        
         positions.push({
-            character: characters[characterId],
+            character: character,
             position: position,
             speed1: speed1
-            
         });
     }
+    
     positions.sort((a, b) => b.speed1 - a.speed1);
     
     const resultsDiv = document.getElementById('results');
@@ -299,10 +362,10 @@ buttonStart.addEventListener('click', function()
     
     resultsDiv.innerHTML = resultsHTML;
     
-    console.log('Результаты гонки:');
-    positions.forEach((pos, index) => {
-        console.log(`${index + 1} место: ${pos.character.name}`);
-    });
+    // console.log('Результаты гонки:');
+    // positions.forEach((pos, index) => {
+    //     console.log(`${index + 1} место: ${pos.character.name}`);
+    // });
 }
          else {
             animationId = requestAnimationFrame(moveTracks);
@@ -326,10 +389,11 @@ userPanel.innerHTML = `
         <span class="user-name">Игрок</span>
     </div>
 `;
+document.body.appendChild(userPanel);
 
-// Добавляем user-panel внутрь topPanel вместо body
 const topPanel = document.querySelector('.topPanel');
 topPanel.appendChild(userPanel);
+
 
 /// тут линия финиша
 
