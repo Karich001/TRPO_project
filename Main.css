@@ -18,6 +18,15 @@ h5{
     margin: 0;
     text-align: center;
 }
+.Icon{
+    background: url('Icon.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 80px;
+    height: 80px;
+    margin-left: 20px; 
+}
 
 body {
     margin: 0;
@@ -85,6 +94,39 @@ body {
     transition: transform 0.1s linear;
 }
 
+.charOnTrack:hover {
+    filter: brightness(1.1);
+}
+
+.charOnTrack:active {
+    transform: scale(0.95) translateX(var(--current-position));
+}
+
+.charOnTrack.slowed {
+    filter: brightness(0.7) sepia(1) hue-rotate(-50deg);
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(var(--current-position)) rotate(0deg); }
+    25% { transform: translateX(var(--current-position)) rotate(-5deg); }
+    75% { transform: translateX(var(--current-position)) rotate(5deg); }
+}
+.charTextOnTrackSlowed
+{
+    background: #ffffffba;
+    border-radius: 10px;
+    padding: 3px 8px;
+    margin-inline: auto;
+    margin-bottom: -30px;
+    position: absolute;
+    left: 800px;
+    align-content: center;
+    bottom: 10px;
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: center;
+}
 .charTextOnTrack{
     background: #ffffffba;
     border-radius: 20px;
@@ -319,8 +361,6 @@ button:disabled {
 .user-avatar {  
     width: 50px;
     height: 50px;
-    background: url('opa.jpeg');
-    background-size: contain    ;
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid #4CAF50;
@@ -347,7 +387,7 @@ button:disabled {
     margin-top: -20px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     background: #333333cf;
     padding: 20px;
     box-sizing: border-box;
