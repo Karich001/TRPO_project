@@ -6,8 +6,12 @@ let raceInProgress = false;
 let isMenuOpened = false;
 let animationId = null;
 let clickCooldown = false;
+let allFinished = false;
 const slowDownDuration = 1000; // 1 секунда замедления
 const clickDelay = 2000; // 2 сек. делэя
+let lastSpeedUpdateTime = 0;
+const speedUpdateInterval = 3000; // Обновлять скорость раз в 2 секунды
+let currentVisualSpeeds = {};
 
 let charData;
 
@@ -32,9 +36,7 @@ container.addEventListener('click', function(event) {
             }
             track.appendChild(newP1);
         }
-        
-        console.log(`Замедление: ${originalSpeed} -> ${slowedSpeed}`);
-        
+                
         setTimeout(() => {
             charElement.dataset.speed = originalSpeed;
             charElement.dataset.slowed = 'false';
@@ -73,18 +75,122 @@ container.addEventListener('click', function(event) {
     }, clickDelay);
 });
 
-
-
 window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const response = await fetch('/chars');
-    if (!response.ok) throw new Error('Ошибка загрузки');
 
-    charData = await response.json();
-    console.log(charData.runners.find(c => c.id === 1).name);
-  } catch (err) {
-    console.error(err);
-  }
+    function createDefaultRacer() {
+
+    const trackDiv = document.createElement('div');
+    trackDiv.classList.add('track');
+    trackDiv.id = 'track0';
+    container.appendChild(trackDiv);
+
+    const charDiv = document.createElement('div');
+    charDiv.dataset.name = charData.runners[0].name;
+    charDiv.classList.add('charOnTrack');
+    charDiv.id = 'char0';
+    charDiv.style = `background: url('${charData.runners[0].url}'); background-size: cover; background-repeat: no-repeat;`;
+    charDiv.dataset.characterId = "0";
+    charDiv.dataset.speed = charData.runners[0].speed;
+    charDiv.dataset.position = "0";
+    charDiv.dataset.slowed = "false";
+    trackDiv.appendChild(charDiv);
+
+    const nameP = document.createElement('p');
+    nameP.classList.add('charTextOnTrack');
+    nameP.id = 'charText0';
+    nameP.textContent = charData.runners[0].name;
+    trackDiv.appendChild(nameP);
+
+    finishLine.classList.add('visible');
+    finishLine.style.right = '130px';
+
+    return charData.runners[0];
+}
+
+function startAutoRace() {
+    if (raceInProgress) return;
+    
+    const tracks = document.getElementsByClassName('charOnTrack');
+    const finishLinePosition = container.offsetWidth - 200;
+    
+    raceInProgress = true;
+    allFinished = false;
+    
+    const startTime = Date.now();
+    let finishedCount = 0;
+    const totalTracks = tracks.length;
+
+    function autoMoveTracks() {
+        if (!raceInProgress) return;
+        
+        let allFinishedNow = false;
+
+        for (let track of tracks) {
+            if (track.dataset.finished === 'true') continue;
+            
+            let currentPosition = parseFloat(track.dataset.position);
+            let speed = parseInt(track.dataset.speed) / 10;
+            
+            if (currentPosition < finishLinePosition) {
+                currentPosition += speed;
+                
+                if (currentPosition >= finishLinePosition) {
+                    currentPosition = finishLinePosition;
+                    track.dataset.finished = 'true';
+                    finishedCount++;
+                    
+                    console.log(`Финиш! ${track.dataset.name}`);
+                }
+                
+                track.dataset.position = currentPosition;
+                track.style.transform = `translateX(${currentPosition}px)`;
+            }
+        }
+
+        allFinishedNow = (finishedCount === totalTracks);
+        
+        if (allFinishedNow) {
+            raceInProgress = false;
+            allFinished = true;
+            
+            setTimeout(() => {
+                resetAutoRace();
+                startAutoRace(); 
+            }, 3000);
+            
+        } else {
+            animationId = requestAnimationFrame(autoMoveTracks);
+        }
+    }
+    
+    autoMoveTracks();
+}
+
+function resetAutoRace() {
+    const tracks = container.getElementsByClassName('charOnTrack');
+    for (let track of tracks) {
+        track.dataset.position = "0";
+        track.dataset.finished = "false";
+        track.style.transform = 'translateX(0px)';
+    }
+    allFinished = false;
+}
+
+    try {
+        const response = await fetch('/chars');
+        if (!response.ok) throw new Error('Ошибка загрузки');
+
+        charData = await response.json();
+        console.log(charData.runners.find(c => c.id === 1).name);
+        
+        createDefaultRacer();
+        startAutoRace();
+        
+    } catch (err) {
+        console.error(err);
+        createDefaultRacer();
+        startAutoRace();
+    }
 });
 
 buttonInv.addEventListener('click', function()
@@ -152,6 +258,46 @@ buttonInv.addEventListener('click', function()
 
         addButton.addEventListener('click', function()
         {
+                function removeDefaultRacer() {
+                const defaultTrack = document.getElementById('track0');
+                const defaultChar = document.getElementById('char0');
+                const defaultText = document.getElementById('charText0');
+                
+                if (defaultTrack) {
+                    defaultTrack.remove();
+                }
+                if (defaultChar) {
+                    defaultChar.remove();
+                }
+                if (defaultText) {
+                    defaultText.remove();
+                }
+                
+                raceInProgress = false;
+                allFinished = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            }
+                removeDefaultRacer();
+            if(allFinished == true)
+            {
+                const tracks = container.getElementsByClassName('charOnTrack');
+                for (let track of tracks) {
+                    track.dataset.position = "0";
+                    track.dataset.finished = "false"; 
+                    track.style.transform = 'translateX(0px)';
+                }
+                
+            
+                const resultsDiv = document.getElementById('results');
+                const firstChild = resultsDiv.firstElementChild;
+                resultsDiv.innerHTML = '';    
+
+                finishLine.classList.remove('visible');
+                allFinished = false;
+            }
             if(!document.getElementById(`track${i}`))
             {
                 const newDiv = document.createElement('div');
@@ -317,13 +463,10 @@ buttonInv.addEventListener('click', function()
 
 buttonReset.addEventListener('click', function()
 {
-    if (isMenuOpened || raceInProgress) { 
-        return;
-    }
-    
     const tracks = container.getElementsByClassName('charOnTrack');
     for (let track of tracks) {
         track.dataset.position = "0";
+        track.dataset.finished = "false"; 
         track.style.transform = 'translateX(0px)';
     }
     
@@ -332,7 +475,8 @@ buttonReset.addEventListener('click', function()
     const firstChild = resultsDiv.firstElementChild;
     resultsDiv.innerHTML = '';    
 
-    finishLine.classList.remove('visible');
+   // finishLine.classList.remove('visible');
+    allFinished = false;
 })
 
 let raceStartTime = 0;
@@ -352,81 +496,130 @@ buttonStart.addEventListener('click', function() {
     finishLine.style.right = '130px';
     
     raceInProgress = true;
+    allFinished = false;
     buttonStart.disabled = true;
     buttonInv.disabled = true;
-    buttonReset.disabled = true; 
+    buttonReset.disabled = true;
+     
     
     const finishLinePosition = container.offsetWidth - 200;
     const startTime = Date.now();
     const finishTimes = []; 
+    let finishedCount = 0; 
+    const totalTracks = tracks.length;
+     for (let track of tracks) {
+        track.dataset.finished = 'false';
+    }
     
-    function moveTracks() {
-        if (!raceInProgress) return;
-        
-        let allFinished = true;
+    function getVisualSpeed(realSpeed) {
+    if (Math.random() < 0.7 && currentVisualSpeeds[realSpeed]) {
+        return currentVisualSpeeds[realSpeed];
+    }
+    
+    const randomChange = Math.floor(Math.random() * 3) + 1;
+    const visualSpeed = Math.max(1, realSpeed + randomChange);
+    
+    currentVisualSpeeds[realSpeed] = visualSpeed;
+    
+    return visualSpeed;
+}
 
-        for (let track of tracks) {
-            let currentPosition = parseFloat(track.dataset.position);
-            let speed = parseInt(track.dataset.speed) / 10;
+    function moveTracks() {
+    if (!raceInProgress) return;
+    
+    let allFinishedNow = false;
+
+    for (let track of tracks) {
+        if (track.dataset.finished === 'true') continue;
+        
+        let currentPosition = parseFloat(track.dataset.position);
+        let speed = parseInt(track.dataset.speed) / 10;
+        
+        if (currentPosition < finishLinePosition) {
+            currentPosition += getVisualSpeed(speed);
             
-            if (currentPosition < finishLinePosition + 15) {
-                currentPosition += speed;
-                track.dataset.position = currentPosition;
-                track.style.transform = `translateX(${currentPosition}px)`;
-                allFinished = false;
-            } else {
-                if (!track.dataset.finishTime) {
-                    const finishTime = Date.now();
-                    track.dataset.finishTime = finishTime;
-                    finishTimes.push({
-                        element: track,
-                        finishTime: finishTime,
-                        characterId: parseInt(track.dataset.characterId)
-                    });
-                }
+            if (currentPosition >= finishLinePosition) {
+                currentPosition = finishLinePosition; 
+                track.dataset.finished = 'true';
+                finishedCount++;
+                
+                const finishTime = Date.now();
+                track.dataset.finishTime = finishTime;
+                finishTimes.push({
+                    element: track,
+                    finishTime: finishTime,
+                    characterId: parseInt(track.dataset.characterId)
+                });
+                
+                console.log(`Финиш! ${track.dataset.name}: ${(finishTime - startTime)}ms`);
             }
-        }
             
-        if (allFinished) {
-            raceInProgress = false;
-            buttonStart.disabled = false;
-            buttonInv.disabled = false;
-            buttonReset.disabled = false; 
-            animationId = null;
-            
-            finishTimes.sort((a, b) => a.finishTime - b.finishTime);
-            
-            const resultsDiv = document.getElementById('results');
-            let resultsHTML = '';
-            
-            finishTimes.forEach((finisher, index) => {
-                const character = charData.runners.find(c => c.id === finisher.characterId);
-                if (character) {
-                    const place = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1} место`;
-                    const time = ((finisher.finishTime - startTime) / 1000).toFixed(2);
-                    
-                    resultsHTML += `
-                        <div class="result-item">
-                            <div class="user-avatar" style="background: url('${character.url}'); background-size: cover; background-repeat: no-repeat;">
-                                <div class="avatar-img" style="display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 12px;">${place}</div>
-                            </div>
-                            <div class="result-info">
-                                <div class="result-name">${character.name}</div>
-                                <div class="result-time">Время: ${time} сек.</div>
-                            </div>
-                        </div>`;
+            track.dataset.position = currentPosition;
+            track.style.transform = `translateX(${currentPosition}px)`;
+
+            const charText = document.getElementById(`charText${track.dataset.characterId}`);
+                if (charText) {
+                    const realSpeed = parseInt(track.dataset.speed);
+                    const visualSpeed = getVisualSpeed(realSpeed);
+                    const character = charData.runners.find(c => c.id === parseInt(track.dataset.characterId));
+                    charText.textContent = `${character.name} (Скорость: ${visualSpeed})`;
                 }
-            });
-            
-            resultsDiv.innerHTML = resultsHTML;
-            
-            for (let track of tracks) {
-                track.dataset.finishTime = '';
-            }
-        } else {
-            animationId = requestAnimationFrame(moveTracks);
         }
     }
+
+    
+    allFinishedNow = (finishedCount === totalTracks);
+    
+    if (allFinishedNow) {
+        raceInProgress = false;
+        allFinished = true; 
+        buttonStart.disabled = false;
+        buttonInv.disabled = false;
+        buttonReset.disabled = false; 
+        animationId = null;
+        
+        for(let track of tracks)
+        {
+            const charText = document.getElementById(`charText${track.dataset.characterId}`);
+            const character = charData.runners.find(c => c.id === parseInt(track.dataset.characterId));
+            charText.textContent = `${character.name}`;
+        }
+
+        finishTimes.sort((a, b) => a.finishTime - b.finishTime);
+        const resultsDiv = document.getElementById('results');
+        let resultsHTML = '';
+        
+        finishTimes.slice(0, 3).forEach((finisher, index) => {
+            const character = charData.runners.find(c => c.id === finisher.characterId);
+            if (character) {
+                const rawTime = finisher.finishTime - startTime;
+                const time = (rawTime / 1000).toFixed(2);
+                
+                console.log(`Результат ${character.name}: ${rawTime}ms = ${time}сек`);
+                
+                const place = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+                resultsHTML += `
+                    <div class="result-item">
+                        <div class="user-avatar" style="background: url('${character.url}'); background-size: cover; background-repeat: no-repeat;">
+                            <div class="avatar-img" style="display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 12px;">${place}</div>
+                        </div>
+                        <div class="result-info">
+                            <div class="result-name">${character.name}</div>
+                            <div class="result-time">Время: ${time} сек.</div>
+                        </div>
+                    </div>`;
+            }
+        });
+        
+        resultsDiv.innerHTML = resultsHTML;
+        
+        for (let track of tracks) {
+            track.dataset.finishTime = '';
+        }
+    } else {
+        animationId = requestAnimationFrame(moveTracks);
+    }
+}
     
     moveTracks();
 });
