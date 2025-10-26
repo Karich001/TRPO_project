@@ -79,18 +79,27 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     function createDefaultRacer() {
 
+    const defaultRunner =  
+    {
+      "id": 0,
+      "name": "Default runner",
+      "color": "#FF7B6B",
+      "speed": 15,
+      "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1sk_eXgKrVebI7H_1NMwLb8YAasI1s8FDdQ&s"
+    }
+
     const trackDiv = document.createElement('div');
     trackDiv.classList.add('track');
     trackDiv.id = 'track0';
     container.appendChild(trackDiv);
 
     const charDiv = document.createElement('div');
-    charDiv.dataset.name = charData.runners[0].name;
+    charDiv.dataset.name = defaultRunner.name;
     charDiv.classList.add('charOnTrack');
     charDiv.id = 'char0';
-    charDiv.style = `background: url('${charData.runners[0].url}'); background-size: cover; background-repeat: no-repeat;`;
+    charDiv.style = `background: url('${defaultRunner.url}'); background-size: cover; background-repeat: no-repeat;`;
     charDiv.dataset.characterId = "0";
-    charDiv.dataset.speed = charData.runners[0].speed;
+    charDiv.dataset.speed = defaultRunner.speed;
     charDiv.dataset.position = "0";
     charDiv.dataset.slowed = "false";
     trackDiv.appendChild(charDiv);
@@ -98,13 +107,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     const nameP = document.createElement('p');
     nameP.classList.add('charTextOnTrack');
     nameP.id = 'charText0';
-    nameP.textContent = charData.runners[0].name;
+    nameP.textContent = defaultRunner.name;
     trackDiv.appendChild(nameP);
 
     finishLine.classList.add('visible');
     finishLine.style.right = '130px';
 
-    return charData.runners[0];
+    return defaultRunner;
 }
 
 function startAutoRace() {
