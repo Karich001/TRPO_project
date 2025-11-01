@@ -724,3 +724,57 @@ button:disabled {
 .auth-skip:hover {
     background: #3333 !important;
 }
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #363B49;
+    border-radius: 4px;
+    border: 1px solid #85878F;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4A5568;
+    box-shadow: 0 0 8px rgba(74, 85, 104, 0.6);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: #2D3748;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #363B49 transparent;
+}
+
+.inventoryMenu::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #363B49, #4A5568);
+    border: 1px solid #96979ED1;
+}
+
+.inventoryMenu::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #4A5568, #718096);
+}
+
+.track, .charOnTrack, .charTextOnTrack, .charTextOnTrackSlowed,
+.user-panel, .topPanel, .topPanelEl, .exitContainer, .authContainer {
+    scrollbar-width: none; 
+}
+
+.track::-webkit-scrollbar,
+.charOnTrack::-webkit-scrollbar,
+.charTextOnTrack::-webkit-scrollbar,
+.charTextOnTrackSlowed::-webkit-scrollbar,
+.user-panel::-webkit-scrollbar,
+.topPanel::-webkit-scrollbar,
+.topPanelEl::-webkit-scrollbar,
+.exitContainer::-webkit-scrollbar,
+.authContainer::-webkit-scrollbar {
+    display: none; 
+}
