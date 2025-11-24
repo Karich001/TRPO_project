@@ -9,17 +9,16 @@
 <body>
     <div class="mainContainer">
         <div class="topPanel">
-        	<a href="/" style="text-decoration: none;"><button class="topPanelEl">Онлайн</button></a>
-        	<button class="topPanelEl active" style="border: 1px solid #C8C8C8BD; width:95px;">Оффлайн</button>
+        	<button class="topPanelEl active">Онлайн</button>
+        	<a href="offline.html" style="text-decoration: none;"><button class="topPanelEl">Оффлайн</button></a>
         	<a href="top.html" style="text-decoration: none;"><button class="topPanelEl">Топ игроков</button></a>
         </div>
         
         <div class="tracksContainer" id="container"></div>
         
-        <div class="controls" style="width: 436px;">
+        <div class="controls">
             <button id="ButtonInv" class="ButtonInv">Инвентарь</button>
-            <button id="ButtonStart">Начать</button>
-            <button id="ButtonReset" style="margin-left: 45px;">Заново</button>
+            <button id="ButtonStart">Готов</button>
         </div>
         
         <div class="results">
@@ -27,6 +26,6 @@
             <div id="results"></div>
         </div>
     </div>
-    <script src="game_offline.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>

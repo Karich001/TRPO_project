@@ -166,7 +166,7 @@ body {
 }
 
 .controls{
-    width: 285px;
+    width: 289px;
     align-content: center;
     background: #37373C;
     border-radius: 10px;
@@ -213,20 +213,6 @@ button {
     align-content: center;
     font-size: 13px;
 }
-.ButtonStart_ready
-{
-    background: #363B49;
-    border: 1px solid green;
-    width: 93px;
-    height: 35px;
-    color: white;
-    border-radius: 21px;
-    cursor: pointer;
-    margin-right: 0px;
-    text-align: center;
-    align-content: center;
-    font-size: 13px;
-}
 .ButtonInv
 {
     background: #363B49;
@@ -236,7 +222,7 @@ button {
     border: none;
     border-radius: 21px;
     cursor: pointer;
-    margin-right: 55px;
+    margin-right: 50px;
     margin-left: 22px;
     padding:0px;
     text-align: center;
@@ -304,8 +290,8 @@ button:disabled {
     border-radius: 21px;
     padding: 0px;
     position: absolute;
-    top: -2px;
-    right: -2px;
+    top: 3px;
+    right: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -339,7 +325,7 @@ button:disabled {
 .characterInMenu{
     position: relative;
     width: 100%;
-    width: 262px;
+    width: 269px;
     height: 328px;
     color: #E3E3E4;
     align-content: center;
@@ -356,10 +342,12 @@ button:disabled {
 
 
 .characterInMenu img {
+    width: 224px !important;
+    height: 180px !important;
+    object-fit: cover !important;
+    border-radius: 10px;
+    margin-bottom: 10px;
     display: block;
-    margin: 0 auto 10px auto; 
-    height: 215px;
-    width: 224px;
     border: 1px solid #85878F;
 }
 
@@ -378,7 +366,7 @@ button:disabled {
 }
 
 .results {
-    margin-top: 20px;
+    margin-top: 0px;
     padding: 14px;
     color: #E3E3E4;
     background: #37373C;
@@ -413,6 +401,7 @@ button:disabled {
     min-width: 500px;
     max-height: 80vh;
     overflow-y: auto;
+    z-index: 2000;
 }
 .user-panel-container {
     position: absolute;
@@ -504,7 +493,7 @@ button:disabled {
     align-items: center;
     justify-content: flex-start;
     background: #333333cf;
-    padding: 10px;
+    padding: 24px;
     box-sizing: border-box;
 }
 
@@ -528,7 +517,7 @@ button:disabled {
 }
 .topPanelEl.active{
     background: #f9f8f88b !important;
-    color: #000000 !important;
+    color: rgba(51, 51, 51, 0.81); !important;
     transform: scale(0.95) translateY(2px);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
     cursor: default;
@@ -550,23 +539,6 @@ button:disabled {
 }
 .ButtonOut:hover{
   filter: saturate(150%)
-}
-.ButtonIn
-{
-    background: url('https://i.imgur.com/iEjbqva_d.png?maxwidth=520&shape=thumb&fidelity=high');
-    background-size: calc(100% + 1px);
-    border: 10px;
-    background-position: center;
-    background-repeat: no-repeat;
-    z-index: 1000;
-    margin-right: -130px;
-    width: 50px;
-    border: 1px solid #96979ED1;
-    border-radius: 20px;
-    height: 50px;
-}
-.ButtonIn:hover{
-  filter: saturate(300%)
 }
 .user-status {
     color: #ccc;
@@ -603,18 +575,18 @@ button:disabled {
 
 .exit-confirm {
     background: #363B49 !important;
-    padding: 10px 20px !important;
     border: 1px solid #96979ED1;
     width: 143px;
     height: 28px;
+    text-align: center;
 }
 
 .exit-cancel {
     background: #363B49 !important;
-    padding: 10px 20px !important;
     border: 1px solid #96979ED1;
     width: 143px;
     height: 28px;
+    text-align: center;
 }
 
 .exit-confirm:hover {

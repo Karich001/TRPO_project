@@ -2,12 +2,12 @@
 // const crypto = require('crypto');
 const container = document.getElementById('container');
 const buttonInv = document.getElementById('ButtonInv');
-buttonInv.classList.add('ButtonInv');
 const buttonStart = document.getElementById('ButtonStart');
 const buttonReset = document.getElementById('ButtonReset');
 let raceInProgress = false;
 let isMenuOpened = false;
 let animationId = null;
+let isAutoRaceActive = false;
 let clickCooldown = false;
 let allFinished = false;
 const slowDownDuration = 1000; // 1 секунда замедления
@@ -40,15 +40,34 @@ const socket = new WebSocket('ws://localhost:3000');
 
 let lastPositions = {};
 
-function animateToPosition(el, from, to) {
+// function animateToPosition(el, from, to) {
+//   const duration = 100; // мс
+//   const start = performance.now();
+
+//   function step(now) {
+//     const progress = Math.min((now - start) / duration, 1);
+//     const current = from + (to - from) * progress;
+//     el.style.transform = `translateX(${current}px)`;
+
+//     if (progress < 1) {
+//       requestAnimationFrame(step);
+//     }
+//   }
+
+//   requestAnimationFrame(step);
+// }
+
+function animateToPosition(el, fromPercent, toPercent) {
   const duration = 100; // мс
   const start = performance.now();
+  const parentWidth = el.parentElement.offsetWidth;
 
   function step(now) {
     const progress = Math.min((now - start) / duration, 1);
-    const current = from + (to - from) * progress;
-    el.style.transform = `translateX(${current}px)`;
-
+    const currentPercent = fromPercent + (toPercent - fromPercent) * progress;
+    const currentPx = (parentWidth * currentPercent) / 10;
+    el.style.transform = `translateX(${Math.min(currentPx, parentWidth-130)}px)`;
+    
     if (progress < 1) {
       requestAnimationFrame(step);
     }
@@ -86,12 +105,26 @@ socket.onmessage = (event) => {
   }
   if (data.type === 'startRace')
   {
+    syncChars();
     console.log('началось');
 
     // startRace();
+    buttonStart.textContent = 'Готов';
+    buttonStart.style.backgroundColor = '';
   }
   if (data.type === 'raceUpdate') {
-    syncChars();
+    data.positions.forEach(p => {
+      const el =  document.getElementById(`char1${p.name}`);
+      if (!el) return;
+
+      const from = lastPositions[p.token] ?? 0;
+      const to = (p.position / 200);
+
+      animateToPosition(el, from, to);
+      lastPositions[p.token] = to;
+    });
+  }
+  if (data.type === 'raceStarts') {
     data.positions.forEach(p => {
       const el =  document.getElementById(`char1${p.name}`);
       if (!el) return;
@@ -103,10 +136,12 @@ socket.onmessage = (event) => {
       lastPositions[p.token] = to;
     });
   }
-
   if (data.type === 'raceFinished') {
+    gameChars.characters.forEach(c => c.position = "0");
     syncChars();
     showResults(data.results);
+    buttonStart.textContent = 'Готов';
+    buttonStart.style.backgroundColor = '';
   }
 };
 
@@ -157,150 +192,6 @@ async function hs256(message, secret) {
   return base64;
 }
 
-// function startRace()
-// {
-//     if (raceInProgress) {
-//         return;
-//     }
-
-//     const tracks = document.getElementsByClassName('charOnTrack');
-//     if (tracks.length === 0) {
-//         alert("Добавьте хотя бы одного персонажа на трек!");
-//         return;
-//     }
-
-//     finishLine.classList.add('visible');
-//     finishLine.style.right = '130px';
-
-//     raceInProgress = true;
-//     allFinished = false;
-//     buttonStart.disabled = true;
-//     buttonInv.disabled = true;
-//     buttonReset.disabled = true;
-
-
-//     const finishLinePosition = container.offsetWidth - 200;
-//     const startTime = Date.now();
-//     const finishTimes = []; 
-//     let finishedCount = 0; 
-//     const totalTracks = tracks.length;
-//      for (let track of tracks) {
-//         track.dataset.finished = 'false';
-//     }
-
-//     function getVisualSpeed(realSpeed) {
-//     if (Math.random() < 0.7 && currentVisualSpeeds[realSpeed]) {
-//         return currentVisualSpeeds[realSpeed];
-//     }
-
-//     const randomChange = Math.floor(Math.random() * 3) + 1;
-//     const visualSpeed = Math.max(1, realSpeed + randomChange);
-
-//     currentVisualSpeeds[realSpeed] = visualSpeed;
-
-//     return visualSpeed;
-//     }
-
-//     function moveTracks() {
-//     if (!raceInProgress) return;
-
-//     let allFinishedNow = false;
-
-//     for (let track of tracks) {
-//         if (track.dataset.finished === 'true') continue;
-
-//         let currentPosition = parseFloat(track.dataset.position);
-//         let speed = parseInt(track.dataset.speed) / 10;
-
-//         if (currentPosition < finishLinePosition) {
-//             currentPosition += getVisualSpeed(speed);
-
-//             if (currentPosition >= finishLinePosition) {
-//                 currentPosition = finishLinePosition; 
-//                 track.dataset.finished = 'true';
-//                 finishedCount++;
-
-//                 const finishTime = Date.now();
-//                 track.dataset.finishTime = finishTime;
-//                 finishTimes.push({
-//                     element: track,
-//                     finishTime: finishTime,
-//                     characterId: parseInt(track.dataset.characterId)
-//                 });
-
-//                 console.log(`Финиш! ${track.dataset.name}: ${(finishTime - startTime)}ms`);
-//             }
-
-//             track.dataset.position = currentPosition;
-//             track.style.transform = `translateX(${currentPosition}px)`;
-
-//             const charText = document.getElementById(`charText${track.dataset.characterId}`);
-//                 if (charText) {
-//                     const realSpeed = parseInt(track.dataset.speed);
-//                     const visualSpeed = getVisualSpeed(realSpeed);
-//                     const character = charData.find(c => c.id === parseInt(track.dataset.characterId));
-//                     charText.textContent = `${track.dataset.name} (Скорость: ${visualSpeed})`;
-//                 }
-//         }
-//     }
-
-
-//     allFinishedNow = (finishedCount == totalTracks);
-
-//     if (allFinishedNow) {
-//         raceInProgress = false;
-//         allFinished = true; 
-//         buttonStart.disabled = false;
-//         buttonInv.disabled = false;
-//         buttonReset.disabled = false; 
-//         animationId = null;
-
-//         for(let track of tracks)
-//         {
-//             const charText = document.getElementById(`charText${track.dataset.characterId}`);
-//             const character = charData.find(c => c.id === parseInt(track.dataset.characterId));
-//             charText.textContent = `${track.dataset.name}`;
-//         }
-
-//         finishTimes.sort((a, b) => a.finishTime - b.finishTime);
-//         const resultsDiv = document.getElementById('results');
-//         let resultsHTML = '';
-
-//         finishTimes.slice(0, 3).forEach((finisher, index) => {
-//             const character = charData.find(c => c.id === finisher.characterId);
-//             if (character) {
-//                 const rawTime = finisher.finishTime - startTime;
-//                 const time = (rawTime / 1000).toFixed(2);
-
-//                 console.log(`Результат ${character.name}: ${rawTime}ms = ${time}сек`);
-
-//                 const place = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-//                 resultsHTML += `
-//                     <div class="result-item">
-//                         <div class="user-avatar" style="background: url('${track.dataset.url}'); background-size: cover; background-repeat: no-repeat;">
-//                             <div class="avatar-img" style="display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 12px;">${place}</div>
-//                         </div>
-//                         <div class="result-info">
-//                             <div class="result-name">${track.dataset.name}</div>
-//                             <div class="result-time">Время: ${time} сек.</div>
-//                         </div>
-//                     </div>`;
-//             }
-//         });
-
-//         resultsDiv.innerHTML = resultsHTML;
-
-//         for (let track of tracks) {
-//             track.dataset.finishTime = '';
-//         }
-//     } else {
-//         animationId = requestAnimationFrame(moveTracks);
-//     }
-// }
-
-//     moveTracks();
-// }
-
 function startRace() {
   if (raceInProgress) {
     console.log('Гонка уже идёт');
@@ -313,7 +204,6 @@ function startRace() {
     return;
   }
 
-  // Инициализация гонки
   raceInProgress = true;
   allFinished = false;
   buttonStart.disabled = true;
@@ -330,10 +220,9 @@ function startRace() {
   const totalTracks = tracks.length;
   const currentVisualSpeeds = {};
 
-  // Инициализация треков
   for (let track of tracks) {
     track.dataset.finished = 'false';
-    track.dataset.position = 0; // тут убрал ||
+    track.dataset.position = 0;
     track.dataset.speed = parseInt(track.dataset.speed) || 10;
     console.log(track.dataset);
   }
@@ -446,28 +335,32 @@ function startRace() {
 function addCharacterToTrack(vak4)
 {
 
-    if(allFinished == true)
-            {
-                const tracks = container.getElementsByClassName('charOnTrack');
-                for (let track of tracks) {
-                    track.dataset.position = "0";
-                    track.dataset.finished = "false"; 
-                    track.style.transform = 'translateX(0px)';
-                }
+    if (isAutoRaceActive && animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+        raceInProgress = false;
+        isAutoRaceActive = false;
+        console.log('Автогонка остановлена при добавлении персонажа');
+    }
 
+    if(allFinished == true) {
+        const tracks = container.getElementsByClassName('charOnTrack');
+        for (let track of tracks) {
+            track.dataset.position = "0";
+            track.dataset.finished = "false"; 
+            track.style.transform = 'translateX(0px)';
+        }
 
-                const resultsDiv = document.getElementById('results');
-                const firstChild = resultsDiv.firstElementChild;
-                resultsDiv.innerHTML = '';    
-
-             //   finishLine.classList.remove('visible');
-                allFinished = false;
-            }
+        const resultsDiv = document.getElementById('results');
+        const firstChild = resultsDiv.firstElementChild;
+        resultsDiv.innerHTML = '';    
+        allFinished = false;
+    }
 
                 function removeDefaultRacer() {
-                const defaultTrack = document.getElementById('track0');
-                const defaultChar = document.getElementById('char0');
-                const defaultText = document.getElementById('charText0');
+      const defaultTrack = document.getElementById('track0');
+      const defaultChar = document.getElementById('char0');
+      const defaultText = document.getElementById('charText0');
 
                 if (defaultTrack) {
                     defaultTrack.remove();
@@ -481,13 +374,14 @@ function addCharacterToTrack(vak4)
 
                 raceInProgress = false;
                 allFinished = false;
+                isAutoRaceActive = false; 
                 if (animationId) {
                     cancelAnimationFrame(animationId);
                     animationId = null;
                 }
             }
                 removeDefaultRacer();
-            if(!document.getElementById(`track${vak4.name}`))//track{i} на track{vak4.name}
+            if(!document.getElementById(`track${vak4.name}`))
             {
                 const newDiv = document.createElement('div');
                 newDiv.classList.add('track');
@@ -534,7 +428,8 @@ function deleteCharacterFromTrack(vak4)
 }
 
 container.addEventListener('click', function(event) {
-    function slowDownCharacter(charElement) {
+    function slowDownCharacter(charElement) { // тут перенести в онлайн и переделать под запрос
+
         const originalSpeed = parseInt(charElement.dataset.speed);
         const slowedSpeed = Math.floor(originalSpeed * 0.7);
         
@@ -572,7 +467,7 @@ container.addEventListener('click', function(event) {
         }, slowDownDuration);
     }
 
-    if (!raceInProgress || clickCooldown) return;
+    // if (!raceInProgress || clickCooldown) return;
     
     const charElement = event.target.closest('.charOnTrack');
     if (!charElement) return;
@@ -582,6 +477,10 @@ container.addEventListener('click', function(event) {
     clickCooldown = true;
     
     slowDownCharacter(charElement);
+     socket.send(JSON.stringify({
+              type: 'slowDownCharacter',
+              characterName: charElement.dataset.name
+            }));
     
     charElement.style.filter = 'brightness(0.7)';
     charElement.style.boxShadow = '0 0 10px red';
@@ -597,6 +496,10 @@ container.addEventListener('click', function(event) {
 });
 
 function showAuthModal() {
+        if(currentUserToken)
+        {
+            return;
+        }
         const shadowing = document.createElement('div');
         shadowing.classList.add('shadowing');
         shadowing.id = 'authShadowing';
@@ -652,14 +555,16 @@ function showAuthModal() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
             const errorDiv = document.getElementById('loginError');
-            ButtonIn.replaceWith(ButtonOut);
+            
             if (!username || !password) {
                 errorDiv.textContent = 'Заполните все поля';
                 return;
             }
+            hs256(username + password, secret).then(token => {
+            currentUserToken = token;
+            localStorage.setItem('token', currentUserToken);
             const formData = new FormData();
-            formData.append("username", username);
-            formData.append("password", password);
+            formData.append("token", currentUserToken);
             fetch('/login', {
                 method: 'POST',
                 body: formData
@@ -672,11 +577,6 @@ function showAuthModal() {
                         document.querySelector('.user-name').textContent = username;
                     }
                     // currentUserToken = await hs256(username+password, secret);
-                    hs256(username + password, secret).then(token => {
-                    currentUserToken = token;
-                    console.log(currentUserToken);
-
-                    //formData
                     const formData = new FormData();
                     formData.append('token', currentUserToken);
                     fetch('/chars', {
@@ -699,16 +599,7 @@ function showAuthModal() {
                 console.log(error);
                 errorDiv.textContent = 'Ошибка соединения';
             });
-                    });
-
-                    // const response = await fetch('/chars');
-                    // if (!response.ok) throw new Error('Ошибка загрузки');
-                    // charData = await response.json();
-
-
-                } else {
-                    errorDiv.textContent = data.message || 'Ошибка входа';
-                }
+                    }});
             })
             .catch(error => {
                 errorDiv.textContent = 'Ошибка соединения';
@@ -725,16 +616,6 @@ function showAuthModal() {
                 errorDiv.textContent = 'Заполните все поля';
                 return;
             }
-            
-            // if (password !== confirmPassword) {
-            //     errorDiv.textContent = 'Пароли не совпадают';
-            //     return;
-            // }
-            
-            // if (password.length < 4) {
-            //     errorDiv.textContent = 'Пароль должен быть не менее 4 символов';
-            //     return;
-            // }
 
             const formData = new FormData();
             formData.append("username", username);
@@ -760,7 +641,6 @@ function showAuthModal() {
         
         document.getElementById('authSkip').addEventListener('click', function() {
             closeAuthModal();
-            ButtonOut.replaceWith(ButtonIn);
         });
         
         function closeAuthModal() {
@@ -791,31 +671,25 @@ function syncChars(){
             if(gameChars.readyPlayers != data.readyPlayers)
             {
                 gameChars.readyPlayers = data.readyPlayers;
-                // for(player of gameChars.readyPlayers)// тут типа менять цвет или както обозначать что чел готов на треке
-                // {
-                //   buttonStart.replaceWith(ButtonStart_ready);
-                // }
+                for(player of gameChars.readyPlayers) //тут типа менять цвет или както обозначать что чел готов на треке
+                {
+                  updateReadyButton();
+                }
             }
             console.log(gameChars)
         } else {
            console.log(data.message || 'Ошибка синхронизации онлайна');
+           updateReadyButton();
         }
     })
     .catch(error => {
         console.log(error);
     });
 }
-// async function syncChars() {
-//   const res = await fetch('/gameChars');
-//   const data = await res.json();
-//   gameChars.characters = data.characters;
-//   gameChars.players = data.players;
-//   gameChars.readyPlayers = data.readyPlayers;
-//   participants = data.participants;
-// }
-
 
 window.addEventListener('DOMContentLoaded', async () => {
+currentUserToken = localStorage.getItem('token');
+console.log(currentUserToken);
 syncChars();
 
 function enableAttentionEffect() {
@@ -825,15 +699,13 @@ function enableAttentionEffect() {
 }
 
 function createDefaultRacer() {
-
-    const defaultRunner =  
-    {
-      "id": 0,
-      "name": "Default runner",
-      "color": "#FF7B6B",
-      "speed": 15,
-      "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1sk_eXgKrVebI7H_1NMwLb8YAasI1s8FDdQ&s"
-    }
+    const defaultRunner = {
+        "id": 0,
+        "name": "Default runner",
+        "color": "#FF7B6B",
+        "speed": 15,
+        "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1sk_eXgKrVebI7H_1NMwLb8YAasI1s8FDdQ&s"
+    };
 
     const trackDiv = document.createElement('div');
     trackDiv.classList.add('track');
@@ -860,23 +732,56 @@ function createDefaultRacer() {
     finishLine.classList.add('visible');
     finishLine.style.right = '130px';
 
+    console.log('DefaultRacer создан, запускаем автогонку через 500мс');
+    
+    setTimeout(() => {
+        if (!currentUserToken) {
+            console.log('Запуск автогонки...');
+            startAutoRace();
+        } else {
+            console.log('Автогонка отключена - пользователь авторизован');
+        }
+    }, 500);
+
     return defaultRunner;
 }
-
 function startAutoRace() {
     if (raceInProgress) return;
 
     const tracks = document.getElementsByClassName('charOnTrack');
+    const hasUserCharacters = Array.from(tracks).some(track => 
+        track.dataset.characterId !== "0" && track.dataset.characterId !== "char0"
+    );
+    
+    if (hasUserCharacters || tracks.length === 0) {
+        console.log('Автогонка отключена - есть пользовательские персонажи или нет треков');
+        return;
+    }
+
     const finishLinePosition = container.offsetWidth - 200;
 
     raceInProgress = true;
     allFinished = false;
+    isAutoRaceActive = true; 
 
     const startTime = Date.now();
     let finishedCount = 0;
     const totalTracks = tracks.length;
 
     function autoMoveTracks() {
+        const currentTracks = document.getElementsByClassName('charOnTrack');
+        const hasNewCharacters = Array.from(currentTracks).some(track => 
+            track.dataset.characterId !== "0" && track.dataset.characterId !== "char0"
+        );
+        
+        if (hasNewCharacters || currentTracks.length === 0) {
+            raceInProgress = false;
+            allFinished = false;
+            isAutoRaceActive = false;
+            console.log('Автогонка прервана - добавлены новые персонажи');
+            return;
+        }
+
         if (!raceInProgress) return;
 
         let allFinishedNow = false;
@@ -908,13 +813,28 @@ function startAutoRace() {
         if (allFinishedNow) {
             raceInProgress = false;
             allFinished = true;
-            setTimeout(() => {
-            resetAutoRace();
-            },3000);
-            setTimeout(() => {
-                startAutoRace(); 
-            }, 6000);
+            isAutoRaceActive = false;
 
+            const finalTracks = document.getElementsByClassName('charOnTrack');
+            const stillOnlyDefault = Array.from(finalTracks).every(track => 
+                track.dataset.characterId === "0" || track.dataset.characterId === "char0"
+            );
+            
+            if (stillOnlyDefault && finalTracks.length === 1) {
+                setTimeout(() => {
+                    resetAutoRace(); 
+                }, 3000);
+                setTimeout(() => {
+                    const checkTracks = document.getElementsByClassName('charOnTrack');
+                    const stillDefault = Array.from(checkTracks).every(track => 
+                        track.dataset.characterId === "0" || track.dataset.characterId === "char0"
+                    );
+                    
+                    if (stillDefault && checkTracks.length === 1 && !currentUserToken) {
+                        startAutoRace(); 
+                    }
+                }, 6000);
+            }
         } else {
             animationId = requestAnimationFrame(autoMoveTracks);
         }
@@ -922,7 +842,6 @@ function startAutoRace() {
 
     autoMoveTracks();
 }
-
 function resetAutoRace() {
     const tracks = container.getElementsByClassName('charOnTrack');
     for (let track of tracks) {
@@ -934,49 +853,42 @@ function resetAutoRace() {
 }
 
     try {
-        // тут запрос при открытии окна!
         showAuthModal();
         createDefaultRacer();
-        startAutoRace();
         enableAttentionEffect();
 
     } catch (err) {
         console.error(err);
         showAuthModal();
         createDefaultRacer();
-        startAutoRace();
     }
 });
 
-buttonInv.addEventListener('click', function()
-{
-    if(!currentUserToken)
-    {
-        alert("Сначала войдите в аккаунт!");
-        return;
-    }
-    if (isFirstClick) {
-        buttonInv.classList.remove('attention');
-        if (blinkInterval) {
-            clearInterval(blinkInterval);
-        }
-        isFirstClick = false;
-    }
-    isMenuOpened = true;
-    if(isMenuOpened) 
-        {
-            buttonInv.disabled = true;
-            buttonStart.disabled = true;
-        }
-    const newDiv = document.createElement('div');
-    newDiv.classList.add('inventoryMenu');
-    newDiv.id = 'menuDiv';
-    document.body.appendChild(newDiv);
-
-    for(let i = 1; i < charData.length+1; i++)
-    {
-
+function getInv(charData, newDiv) {
+    document.getElementById('generateButton')?.remove();
+    const generateButton = document.createElement('button');
+    generateButton.textContent = 'Сгенерировать';
+    generateButton.classList.add('generateButton');
+    newDiv.appendChild(generateButton);
+    generateButton.id = 'generateButton';
+    const formData = new FormData();
+    formData.append('token', currentUserToken);
+    fetch('/chars', {
+      method: 'POST',
+      body: formData
+    }).then(response => response.json())
+       .then(data => {
+    if (data.success) {
+        charData = data.data;
+        console.log('newchardatafromINV:' + data.data)
+        charData.forEach((char, index) => {
+          char.id = index + 1;
+        });
+        const characters = newDiv.querySelectorAll('.characterInMenu');
+    characters.forEach(char => char.remove());
+  for (let i = 1; i <= charData.length; i++) {
         const vak4 = charData.find(c => c.id === i);
+        if (!vak4) continue;
         const newMDiv = document.createElement('div');
         newMDiv.classList.add('characterInMenu');
         newMDiv.id = `char${vak4.name}`;
@@ -1005,7 +917,7 @@ buttonInv.addEventListener('click', function()
         killButton.id = `killButton${vak4.name}`;
         newMDiv.appendChild(killButton);
 
-         const buttonContainer = document.createElement('div');
+        const buttonContainer = document.createElement('div');
         buttonContainer.classList.add('button-container');
 
         const addButton = document.createElement('button');
@@ -1018,9 +930,24 @@ buttonInv.addEventListener('click', function()
         deleteButton.textContent = 'Удалить';
         deleteButton.classList.add('deleteButton');
         buttonContainer.appendChild(deleteButton);
-        deleteButton.id = `deleteButton${vak4.name}`;
+        deleteButton.id = `deleteButton${vak4.name}`;  
 
         newMDiv.appendChild(buttonContainer);
+
+        if(vak4.name == "Default runner")
+        {
+            addButton.disabled = true;
+            deleteButton.disabled = true;    
+            killButton.disabled = true;
+        }
+        if(newDiv.querySelector('#generateButton'))
+        {
+            const refEl = newDiv.querySelector('#generateButton');
+            newDiv.insertBefore(newMDiv, refEl);
+        }
+        else{
+        newDiv.appendChild(newMDiv);
+        }
 
         addButton.addEventListener('click', function()
         {
@@ -1056,8 +983,8 @@ buttonInv.addEventListener('click', function()
                 finishLine.classList.remove('visible');
                 }
             alert(`ТЫ УБИЛ ${document.getElementById(`char${vak4.name}`).querySelector('img').alt}`);
-            });
             syncChars();
+            });
             deleteButton.addEventListener('click', function()
             {
                 socket.send(JSON.stringify({
@@ -1067,15 +994,60 @@ buttonInv.addEventListener('click', function()
 
                 deleteCharacterFromTrack(vak4);
                 syncChars();
-            })
+            });
     }
+}
+
+
+    document.getElementById('urlInput')?.remove();
+    } else {
+        alert(data.message || 'Ошибка получения бойцов');
     }
 
-    const generateButton = document.createElement('button');
-    generateButton.textContent = 'Сгенерировать';
-    generateButton.classList.add('generateButton');
-    newDiv.appendChild(generateButton);
-    generateButton.id = 'generateButton'
+    });
+
+}
+
+buttonInv.addEventListener('click', function()
+{
+    if(!currentUserToken)
+    {
+        alert("Сначала войдите в аккаунт!");
+        return;
+    }
+    if (isFirstClick) {
+        buttonInv.classList.remove('attention');
+        if (blinkInterval) {
+            clearInterval(blinkInterval);
+        }
+        isFirstClick = false;
+    }
+    isMenuOpened = true;
+    if(isMenuOpened) 
+        {
+            buttonInv.disabled = true;
+            buttonStart.disabled = true;
+        }
+    const newDiv = document.createElement('div');
+    newDiv.classList.add('inventoryMenu');
+    newDiv.id = 'menuDiv';
+    document.body.appendChild(newDiv);
+    if(!charData.find(c => c.id === 1))
+    {
+        const defaultRunner =  
+        {
+          "id": 1,
+          "name": "Default runner",
+          "color": "#FF7B6B",
+          "speed": 15,
+          "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1sk_eXgKrVebI7H_1NMwLb8YAasI1s8FDdQ&s"
+        }   
+        charData[0] = defaultRunner; 
+    }
+    console.log(charData);
+    getInv(charData, newDiv);
+
+
 
     const exitButton = document.createElement('button');
     exitButton.textContent = 'X';
@@ -1092,7 +1064,7 @@ buttonInv.addEventListener('click', function()
         buttonInv.disabled = false;
         buttonStart.disabled = false;
 
-    })
+    });
 
 generateButton.addEventListener('click', function()
 {
@@ -1129,31 +1101,25 @@ generateButton.addEventListener('click', function()
             })
             .then(response => response.json())
             .then(data => {
-              console.log('Файл успешно загружен:', data);
+              console.log('Файл:', data);
               urlInput.style.display = 'none';
+              document.getElementById('urlInput').remove();
+              generateButton.textContent = 'Сгенерировать';
+              getInv(charData, newDiv);
+              if(data.success&&data.success == false)
+              {
+                alert(data.message);
+              }
             })
             .catch(error => {
               console.error('Ошибка загрузки файла:', error);
             });
+
         }
     }
 });
 
 });
-
-
-// buttonInv.addEventListener('click', function()
-// {
-//     if(container.innerHTML)
-//     {
-//         for(let i = 0; i < charData.length+1; i++)
-//         {
-//             let char = document.getElementById(`track${vak4.name}`); 
-//             // char.position = 500px;
-//         }
-//     }
-// });
-
 
 let raceStartTime = 0;
 
@@ -1171,15 +1137,13 @@ buttonStart.addEventListener('click', function() {
     }
     else{
         gameChars.readyPlayers.push(currentUserToken);
-        const ButtonStart_ready = document.createElement('div');
-        ButtonStart_Ready.classList.add('ButtonStart_ready');
-        buttonStart.replaceWith(ButtonStart_ready);
         console.log(gameChars.readyPlayers);
         socket.send(JSON.stringify({
           type: 'readyToRace',
           token: currentUserToken
         })); 
         syncChars();
+        updateReadyButton();
     } 
 });
 
@@ -1189,14 +1153,12 @@ const userPanelContainer = document.createElement('div');
 userPanelContainer.className = 'user-panel-container';
 const ButtonOut = document.createElement('div');
 ButtonOut.className = 'ButtonOut';
-const ButtonIn = document.createElement('div');
-ButtonIn.className = 'ButtonIn';
 
 const userPanel = document.createElement('div');
 userPanel.className = 'user-panel';
 userPanel.innerHTML = `
     <div class="user-avatar">
-        <img src="https://i.imgur.com/Mk9hgo0_d.jpeg" alt="" class="avatar-img" style="object-fit: cover;width: 100%; height: 100%;">
+        <img scr="https://i.imgur.com/Mk9hgo0_d.jpeg?maxwidth=520&shape=thumb&fidelity=high" alt="" class="avatar-img" style="object-fit: cover;width: 100%; height: 100%;">
     </div>
     <div class="user-info">
         <span class="user-name">Игрок</span>
@@ -1206,9 +1168,7 @@ userPanel.innerHTML = `
 const blocker = document.createElement('div');
 blocker.className = 'blocker';
 
-if(!currentUserToken)
-{  userPanelContainer.appendChild(ButtonIn);}
-else {userPanelContainer.appendChild(ButtonOut);}
+userPanelContainer.appendChild(ButtonOut);
 userPanelContainer.appendChild(userPanel);
 userPanelContainer.appendChild(blocker);
 document.body.appendChild(userPanelContainer);
@@ -1247,7 +1207,45 @@ userPanel.addEventListener('mouseleave', function() {
 
 /// тут линия финиша
 
+window.addEventListener('load', () => {
+if (currentUserToken) {
+  const formData = new FormData();
+  formData.append("token", currentUserToken);
+  fetch('/login', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      if (document.querySelector('.user-name')) {
+        document.querySelector('.user-name').textContent = data.username;
+      }
 
+      const formData = new FormData();
+      formData.append('token', currentUserToken);
+      fetch('/chars', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          charData = data.data;
+          charData.forEach((char, index) => {
+            char.id = index + 1;
+          });
+        } else {
+          alert(data.message || 'Ошибка получения бойцов');
+        }
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
+  });
+}
+});
 
 
 
@@ -1275,6 +1273,7 @@ ButtonOut.addEventListener('click', function() {
             document.querySelector('.user-name').textContent = "Игрок";
         }
         currentUserToken = "";
+        localStorage.setItem('token', currentUserToken);
         document.body.removeChild(exitContainer);
         document.body.removeChild(shadowing);
         showAuthModal();
@@ -1284,10 +1283,23 @@ ButtonOut.addEventListener('click', function() {
         document.body.removeChild(exitContainer);
         document.body.removeChild(shadowing);
     });
+
 });
 
-ButtonIn.addEventListener('click',function()
-{
-    showAuthModal();
-    ButtonIn.replaceWith(ButtonOut);
-});
+function updateReadyButton() {
+    const readyCount = gameChars.readyPlayers.length;
+    const totalPlayers = gameChars.players.length;
+    
+    if (readyCount > 0) {
+        buttonStart.textContent = `Готов (${readyCount}/${totalPlayers})`;
+        
+        if (readyCount === totalPlayers && totalPlayers > 0) {
+            buttonStart.style.backgroundColor = ''; 
+        } else {
+            buttonStart.style.backgroundColor = ''; 
+        }
+    } else {
+        buttonStart.textContent = 'Готов';
+        buttonStart.style.backgroundColor = ''; 
+    }
+}
