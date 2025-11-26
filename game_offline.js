@@ -228,10 +228,10 @@ function showAuthModal() {
         authContainer.id = 'authContainer';
         
         authContainer.innerHTML = `
-            <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="login">Вход</button>
-                <button class="auth-tab" data-tab="signup">Регистрация</button>
-            </div>
+            <div class="auth-switch" data-active="left">
+            <button class="auth-switch-btn" data-side="left">Авторизация</button>
+            <button class="auth-switch-btn" data-side="right">Регистрация</button>
+           </div> 
             
             <div class="auth-content">
                 <div id="loginForm" class="auth-form active">
@@ -246,7 +246,6 @@ function showAuthModal() {
                     <h3>Регистрация</h3>
                     <input type="text" id="signupUsername" class="auth-input" placeholder="Логин">
                     <input type="password" id="signupPassword" class="auth-input" placeholder="Пароль">
-                    <input type="password" id="signupConfirmPassword" class="auth-input" placeholder="Повторите пароль">
                     <button id="signupSubmit" class="auth-submit">Зарегистрироваться</button>
                     <div id="signupError" class="auth-error"></div>
                 </div>
@@ -258,18 +257,43 @@ function showAuthModal() {
         document.body.appendChild(shadowing);
         document.body.appendChild(authContainer);
         
-        const tabs = authContainer.querySelectorAll('.auth-tab');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabName = this.dataset.tab;
-                
-                tabs.forEach(t => t.classList.remove('active'));
-                authContainer.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-                
-                this.classList.add('active');
-                document.getElementById(tabName + 'Form').classList.add('active');
-            });
+        const switchEl = document.querySelector('.auth-switch');
+        const buttons = document.querySelectorAll('.auth-switch-btn');
+
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+
+        function updateForms() {
+          const active = switchEl.dataset.active;
+          const isLeft = active === 'left';
+          
+          // Показываем/скрываем формы
+          loginForm.classList.toggle('active', isLeft);
+          signupForm.classList.toggle('active', !isLeft);
+          
+          // Также обновляем заголовки если нужно
+          const loginTitle = loginForm.querySelector('h3');
+          const signupTitle = signupForm.querySelector('h3');
+          
+          if (isLeft) {
+            loginTitle.textContent = 'Авторизация';
+            signupTitle.textContent = 'Регистрация';
+          } else {
+            loginTitle.textContent = 'Вход';
+            signupTitle.textContent = 'Создать аккаунт';
+          }
+        }
+
+        buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const side = btn.dataset.side;
+            switchEl.dataset.active = side;
+            updateForms();
+          });
         });
+
+        // Инициализация при открытии модального окна
+        updateForms();
         
         document.getElementById('loginSubmit').addEventListener('click', function() {
             const username = document.getElementById('loginUsername').value.trim();
@@ -317,6 +341,7 @@ function showAuthModal() {
                     } else {
                         errorDiv.textContent = data.message || 'Ошибка получения бойцов';
                     }
+                    updateAuthButtons();
             })
             .catch(error => {
                 console.log(error);
@@ -395,6 +420,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 currentUserToken = localStorage.getItem('token');
 console.log(currentUserToken);
 syncChars();
+updateAuthButtons();
 function syncChars(){
     if (currentUserToken) {
         const formData = new FormData();
@@ -996,6 +1022,8 @@ const userPanelContainer = document.createElement('div');
 userPanelContainer.className = 'user-panel-container';
 const ButtonOut = document.createElement('div');
 ButtonOut.className = 'ButtonOut';
+const ButtonIn = document.createElement('div');
+ButtonIn.className = 'ButtonIn';
 
 const userPanel = document.createElement('div');
 userPanel.className = 'user-panel';
@@ -1126,6 +1154,7 @@ ButtonOut.addEventListener('click', function() {
         }
         currentUserToken = "";
         localStorage.setItem('token', currentUserToken);
+        updateAuthButtons();
         document.body.removeChild(exitContainer);
         document.body.removeChild(shadowing);
         showAuthModal();
@@ -1137,3 +1166,18 @@ ButtonOut.addEventListener('click', function() {
     });
 
 });
+ButtonIn.addEventListener('click',function()
+{
+  showAuthModal();
+});
+function updateAuthButtons() {
+    if(!currentUserToken) {
+        if (document.body.contains(ButtonOut)) {
+            ButtonOut.replaceWith(ButtonIn);
+        }
+    } else {
+        if (document.body.contains(ButtonIn)) {
+            ButtonIn.replaceWith(ButtonOut);
+        }
+    }
+}

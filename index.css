@@ -101,7 +101,8 @@ body {
 {
     .charOnTrack{
     padding: 18px;
-    bottom: 15px;
+    padding-left: 55px;
+    bottom: 20px;
 }
 }
 .charOnTrack:hover {
@@ -555,9 +556,9 @@ button:disabled {
     background-repeat: no-repeat;
     z-index: 1000;
     margin-right: -130px;
-    width: 50px;
+    width: 40px;
     border-radius: 20px;
-    height: 50px;
+    height: 40px;
     background-size: cover;
     
 }
@@ -753,6 +754,7 @@ button:disabled {
 .auth-form h3 {
     color: white;
     text-align: center;
+    margin-top: 61px;
     margin-bottom: 65px;
 }
 

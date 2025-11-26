@@ -1,12 +1,14 @@
 let container = document.getElementById('results');
 let animationId = null;
-
+let currentUserToken = ""; 
+const secret = "52";
 
 let charData;
 
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     currentUserToken = localStorage.getItem('token');
+    updateAuthButtons();
     const response = await fetch('/allChars');
     if (!response.ok) throw new Error('Ошибка загрузки');
 
@@ -110,6 +112,8 @@ const blocker = document.createElement('div');
 blocker.className = 'blocker';
 const ButtonOut = document.createElement('div');
 ButtonOut.className = 'ButtonOut';
+const ButtonIn = document.createElement('div');
+ButtonIn.className = 'ButtonIn';
 
 userPanelContainer.appendChild(ButtonOut);
 userPanelContainer.appendChild(userPanel);
@@ -215,6 +219,7 @@ ButtonOut.addEventListener('click', function() {
         }
         currentUserToken = "";
         localStorage.setItem('token', currentUserToken);
+        updateAuthButtons();
         document.body.removeChild(exitContainer);
         document.body.removeChild(shadowing);
         showAuthModal();
@@ -226,3 +231,215 @@ ButtonOut.addEventListener('click', function() {
     });
 
 });
+ButtonIn.addEventListener('click',function()
+{
+  showAuthModal();
+});
+function updateAuthButtons() {
+    if(!currentUserToken) {
+        if (document.body.contains(ButtonOut)) {
+            ButtonOut.replaceWith(ButtonIn);
+        }
+    } else {
+        if (document.body.contains(ButtonIn)) {
+            ButtonIn.replaceWith(ButtonOut);
+        }
+    }
+}
+function showAuthModal() {
+        if(currentUserToken)
+        {
+            return;
+        }
+        const shadowing = document.createElement('div');
+        shadowing.classList.add('shadowing');
+        shadowing.id = 'authShadowing';
+        
+        const authContainer = document.createElement('div');
+        authContainer.classList.add('authContainer');
+        authContainer.id = 'authContainer';
+        
+        authContainer.innerHTML = `
+            <div class="auth-switch" data-active="left">
+            <button class="auth-switch-btn" data-side="left">Авторизация</button>
+            <button class="auth-switch-btn" data-side="right">Регистрация</button>
+           </div>            
+            <div class="auth-content">
+                <div id="loginForm" class="auth-form active">
+                    <h3>Авторизация</h3>
+                    <input type="text" id="loginUsername" class="auth-input" placeholder="Логин">
+                    <input type="password" id="loginPassword" class="auth-input" placeholder="Пароль">
+                    <button id="loginSubmit" class="auth-submit">Войти</button>
+                    <div id="loginError" class="auth-error"></div>
+                </div>
+                
+                <div id="signupForm" class="auth-form">
+                    <h3>Регистрация</h3>
+                    <input type="text" id="signupUsername" class="auth-input" placeholder="Логин">
+                    <input type="password" id="signupPassword" class="auth-input" placeholder="Пароль">
+                    <button id="signupSubmit" class="auth-submit">Зарегистрироваться</button>
+                    <div id="signupError" class="auth-error"></div>
+                </div>
+            </div>
+            
+            <button id="authSkip" class="auth-skip">Пропустить</button>
+        `;
+        
+        document.body.appendChild(shadowing);
+        document.body.appendChild(authContainer);
+        
+       const switchEl = document.querySelector('.auth-switch');
+        const buttons = document.querySelectorAll('.auth-switch-btn');
+
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+
+        function updateForms() {
+          const active = switchEl.dataset.active;
+          const isLeft = active === 'left';
+          
+          loginForm.classList.toggle('active', isLeft);
+          signupForm.classList.toggle('active', !isLeft);
+          
+          const loginTitle = loginForm.querySelector('h3');
+          const signupTitle = signupForm.querySelector('h3');
+          
+          if (isLeft) {
+            loginTitle.textContent = 'Авторизация';
+            signupTitle.textContent = 'Регистрация';
+          } else {
+            loginTitle.textContent = 'Вход';
+            signupTitle.textContent = 'Создать аккаунт';
+          }
+        }
+
+        buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const side = btn.dataset.side;
+            switchEl.dataset.active = side;
+            updateForms();
+          });
+        });
+
+        updateForms();
+        
+        document.getElementById('loginSubmit').addEventListener('click', function() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            
+            if (!username || !password) {
+                errorDiv.textContent = 'Заполните все поля';
+                return;
+            }
+            hs256(username + password, secret).then(token => {
+            currentUserToken = token;
+            localStorage.setItem('token', currentUserToken);
+            const formData = new FormData();
+            formData.append("token", currentUserToken);
+            fetch('/login', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeAuthModal();
+                    if (document.querySelector('.user-name')) {
+                        document.querySelector('.user-name').textContent = username;
+                    }
+                    // currentUserToken = await hs256(username+password, secret);
+                    const formData = new FormData();
+                    formData.append('token', currentUserToken);
+                    fetch('/chars', {
+                      method: 'POST',
+                      body: formData
+                    }).then(response => response.json())
+            .       then(data => {
+                    if (data.success) {
+                        charData = data.data;
+                        // charData.sort((a, b) => a.id - b.id);
+                        charData.forEach((char, index) => {
+                          char.id = index + 1;
+                        });
+                        errorDiv.textContent = 'Все ок.';
+                    } else {
+                        errorDiv.textContent = data.message || 'Ошибка получения бойцов';
+                    }
+                    updateAuthButtons();
+            })
+            .catch(error => {
+                console.log(error);
+                errorDiv.textContent = 'Ошибка соединения';
+            });
+                    }});
+            })
+            .catch(error => {
+                errorDiv.textContent = 'Ошибка соединения';
+            });
+        });
+        
+        document.getElementById('signupSubmit').addEventListener('click', function() {
+            const username = document.getElementById('signupUsername').value.trim();
+            const password = document.getElementById('signupPassword').value.trim();
+            // const confirmPassword = document.getElementById('signupConfirmPassword').value.trim();
+            const errorDiv = document.getElementById('signupError');
+            
+            if (!username || !password) {
+                errorDiv.textContent = 'Заполните все поля';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("username", username);
+            formData.append("password", password); 
+            fetch('/signup', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    errorDiv.textContent = 'Регистрация успешна! Теперь войдите.';
+                    tabs[0].click();
+                } else {
+                    errorDiv.textContent = data.message || 'Ошибка регистрации';
+                }
+            })
+            .catch(error => {
+                console.log(error);
+                errorDiv.textContent = 'Ошибка соединения';
+            });
+        });
+        
+        document.getElementById('authSkip').addEventListener('click', function() {
+            closeAuthModal();
+        });
+        
+        function closeAuthModal() {
+            document.body.removeChild(shadowing);
+            document.body.removeChild(authContainer);
+        }
+    }
+async function hs256(message, secret) {
+  const enc = new TextEncoder();
+  const keyData = enc.encode(secret);
+  const msgData = enc.encode(message);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  return base64;
+}

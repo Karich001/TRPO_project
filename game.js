@@ -547,11 +547,9 @@ function showAuthModal() {
           const active = switchEl.dataset.active;
           const isLeft = active === 'left';
           
-          // Показываем/скрываем формы
           loginForm.classList.toggle('active', isLeft);
           signupForm.classList.toggle('active', !isLeft);
           
-          // Также обновляем заголовки если нужно
           const loginTitle = loginForm.querySelector('h3');
           const signupTitle = signupForm.querySelector('h3');
           
@@ -572,7 +570,6 @@ function showAuthModal() {
           });
         });
 
-        // Инициализация при открытии модального окна
         updateForms();
         
         document.getElementById('loginSubmit').addEventListener('click', function() {
