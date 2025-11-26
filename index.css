@@ -97,7 +97,13 @@ body {
     bottom: 38px;
     transition: transform 1.3s linear;
 }
-
+@media (max-width: 768px)
+{
+    .charOnTrack{
+    padding: 18px;
+    bottom: 15px;
+}
+}
 .charOnTrack:hover {
     filter: brightness(1.1);
 }
@@ -540,6 +546,24 @@ button:disabled {
 .ButtonOut:hover{
   filter: saturate(150%)
 }
+.ButtonIn
+{
+    background: url('https://i.imgur.com/iEjbqva_d.png?maxwidth=520&shape=thumb&fidelity=high');
+    background-size: calc(100% + 1px);
+    border: 10px;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 1000;
+    margin-right: -130px;
+    width: 50px;
+    border-radius: 20px;
+    height: 50px;
+    background-size: cover;
+    
+}
+.ButtonIn:hover{
+  filter: saturate(300%)
+}
 .user-status {
     color: #ccc;
     font-size: 12px;
@@ -625,40 +649,71 @@ button:disabled {
     border: 1px solid #96979ED1;
 }
 
-.auth-tabs {
-    display: flex;
-    margin-bottom: 65px;
-    margin-top: 57px;
-}
-
-.auth-tab {
-    flex: 1;
-    background: none;
-    border: none;
-    color: #b8b8b8;
-    padding: 12px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
+/* Контейнер-переключатель */
+.auth-switch {
     position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    width: 100%;
+    max-width: 302px;
+    height: 28px;
+    text-align: center;
+    margin-top: 57px;
+    margin-left: 62px;
+    border-radius: 10px;
+    border: 1px solid #96979ED1;
     overflow: hidden;
-    justify-content: center;
-    transition: all 0.3s ease;
-    font-weight: bold;
+    background: white;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
 }
 
-.auth-tab::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: #b8b8b8;
-    background-size: 400%;
-    border-radius: 8px;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+/* Кнопки внутри */
+.auth-switch-btn {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    border: none;
+    margin-left: 20px;
+    margin-top: -2px;
+    color: #b8b8b8;
+    font-weight: bold;
+    cursor: pointer;
+    width: 144px;
+    left: -23px;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+/* Тёмный “слайдер”, перетекающий между половинами */
+.auth-switch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 50%;
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #363B49 0%, #2A2F3A 100%);
+  box-shadow: inset 0 0 0 1px #96979ED1;
+  z-index: 1;
+  transform: translateX(0%);             /* левая половина по умолчанию */
+  transition: transform 400ms ease;      /* плавное “перетекание” */
+}
+
+/* При активной правой вкладке слайдер переезжает вправо */
+.auth-switch[data-active="right"]::after {
+  transform: translateX(100%);
+}
+
+/* Подсветка текста активной стороны */
+.auth-switch[data-active="left"] .auth-switch-btn[data-side="left"],
+.auth-switch[data-active="right"] .auth-switch-btn[data-side="right"] {
+  color: #e0e0e0;
+}
+
+/* Ховер для лучшей обратной связи */
+.auth-switch-btn:hover {
+  color: #ffffff;
 }
 
 .auth-tab:hover::before {
@@ -677,9 +732,15 @@ button:disabled {
 }
 
 @keyframes glowing-border {
-    0% { background-position: 0 0; }
-    50% { background-position: 400% 0; }
-    100% { background-position: 0 0; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 .auth-form {
     display: none;
@@ -801,4 +862,55 @@ button:disabled {
 .exitContainer::-webkit-scrollbar,
 .authContainer::-webkit-scrollbar {
     display: none; 
+}
+@media (max-width: 600px){
+.user-panel {
+        display: none;
+    }
+    
+    /* Скрываем лишние элементы в user-panel */
+    .user-panel .user-info .user-status,
+    .user-panel::before,
+    .user-panel::after {
+        display: none;
+    }
+    
+    /* Уменьшаем аватар */
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+        border-width: 2px;
+    }
+    
+    /* Настраиваем текст имени */
+    .user-name {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 80px;
+    }
+    
+    /* Убираем анимации и эффекты для мобильных */
+    .user-panel.shifted,
+    .user-panel.returning {
+        transform: none !important;
+    }
+    
+    .blocker {
+        display: none !important;
+    }
+    
+    /* Позиционируем контейнер */
+    .user-panel-container {
+        top: 10px;
+        right: 10px;
+    }
+    
+    .ButtonOut {
+        margin-right: -10px;
+        margin-top: 29px;
+        width: 40px;
+        height: 40px;
+    }
 }
